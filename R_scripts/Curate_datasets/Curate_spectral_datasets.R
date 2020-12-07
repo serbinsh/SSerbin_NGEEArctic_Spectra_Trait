@@ -190,10 +190,6 @@ Utqiagvik_2014_2016_Canopy_Reflectance <- Utqiagvik_2014_2016_Canopy_Reflectance
   select(Location,paste(orig_names))
 head(Utqiagvik_2014_2016_Canopy_Reflectance)[,1:10]
 
-
-
-
-
 NGEEArctic_leaf_reflectance <- rbind(Utqiagvik_2013_Leaf_Reflectance,Utqiagvik_2014_2016_Leaf_Reflectance,
                                      SewardPeninsual_2016_Leaf_Reflectance)
 head(NGEEArctic_leaf_reflectance)[,1:10]
@@ -201,9 +197,12 @@ unique(NGEEArctic_leaf_reflectance$Location)
 unique(NGEEArctic_leaf_reflectance$USDA_Species_Code)
 unique(NGEEArctic_leaf_reflectance$Instrument)
 
+NGEEArctic_canopy_reflectance <- rbind(Utqiagvik_2014_2016_Canopy_Reflectance)
 
-
-NGEEArctic_Reflectance <- list(Leaf_Reflectance=NGEEArctic_leaf_reflectance,Canopy_Reflectance)
+NGEEArctic_Reflectance <- list(Leaf_Reflectance=NGEEArctic_leaf_reflectance,
+                               Canopy_Reflectance=NGEEArctic_canopy_reflectance)
+head(NGEEArctic_Reflectance$Leaf_Reflectance)[,1:5]
+head(NGEEArctic_Reflectance$Canopy_Reflectance)[,1:5]
 
 save(NGEEArctic_Reflectance, file = file.path(input_dir,"NGEEArctic_Leaf_and_Canopy_Reflectance.RData"))
 #--------------------------------------------------------------------------------------------------#
