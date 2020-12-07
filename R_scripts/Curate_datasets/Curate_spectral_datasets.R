@@ -183,6 +183,16 @@ SewardPeninsual_2016_Leaf_Reflectance <- SewardPeninsual_2016_Leaf_Reflectance %
   select(Location,paste(orig_names))
 head(SewardPeninsual_2016_Leaf_Reflectance)[,1:10]
 
+Utqiagvik_2014_2016_Canopy_Reflectance <- read.csv(file = file.path(input_dir,"NGEE-Arctic_Utqiagvik_2014_2016_Canopy_Spectral_Reflectance.csv"))
+orig_names <- names(Utqiagvik_2014_2016_Canopy_Reflectance)
+Utqiagvik_2014_2016_Canopy_Reflectance$Location <- rep("Utqiagvik",times=dim(Utqiagvik_2014_2016_Canopy_Reflectance)[1])
+Utqiagvik_2014_2016_Canopy_Reflectance <- Utqiagvik_2014_2016_Canopy_Reflectance %>%
+  select(Location,paste(orig_names))
+head(Utqiagvik_2014_2016_Canopy_Reflectance)[,1:10]
+
+
+
+
 
 NGEEArctic_leaf_reflectance <- rbind(Utqiagvik_2013_Leaf_Reflectance,Utqiagvik_2014_2016_Leaf_Reflectance,
                                      SewardPeninsual_2016_Leaf_Reflectance)
