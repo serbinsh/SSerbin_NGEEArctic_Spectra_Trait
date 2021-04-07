@@ -6,6 +6,13 @@
 ####################################################################################################
 
 
+#---------------- Close all devices and delete all variables. -------------------------------------#
+rm(list=ls(all=TRUE))   # clear workspace
+graphics.off()          # close any open graphics
+closeAllConnections()   # close any open connections to files
+#--------------------------------------------------------------------------------------------------#
+
+
 #--------------------------------------------------------------------------------------------------#
 ### Load libraries
 list.of.packages <- c("pls","dplyr","reshape2","here","plotrix","ggplot2","gridExtra",
