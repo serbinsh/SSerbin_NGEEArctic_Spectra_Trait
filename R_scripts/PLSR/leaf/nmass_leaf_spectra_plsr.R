@@ -69,6 +69,10 @@ getwd()  # check wd
 lr <- NGEEArctic_Reflectance$Leaf_Reflectance %>%
   select(Sample_ID,Instrument,starts_with("Wave_"))
 head(lr)[,1:6]
+
+lr <- data.frame(lr) %>%
+  filter(Wave_850 > 35)
+
 merged_data <- merge(x = chn_lma_data, y = lr, by = "Sample_ID")
 head(merged_data)[,1:15]
 
@@ -100,8 +104,12 @@ head(plsr_data)[,1:6]
 
 ### outlier cleanup
 remove_sampleIDs <- c("BNL1978","BNL1820","BNL1819","BNL1966","BNL1267","BNL1967",
-                      "BNL1962","BNL1818","BNL2058","BNL13194","BNL2060")
-#remove <- which(plsr_data$Sample_ID %in% remove_sampleIDs)
+                      "BNL1962","BNL1818","BNL2058","BNL13194","BNL2060",
+                      "BNL2034","BNL1769","BNL1984","BNL2338","BNL13182",
+                      "BNL1958","BNL2033","BNL1651","BNL1703","BNL1573",
+                      "BNL2820","BNL2035","BNL1893","BNL1896","BNL2117",
+                      "BNL2106","BNL13003")
+
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs)
 #--------------------------------------------------------------------------------------------------#
@@ -112,8 +120,10 @@ plsr_data <- plsr_data %>%
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
 
 use_this_seed <- 31245612
+#use_this_seed <- 824567889
+#use_this_seed <- 45678
 
-method <- "dplyr" #base/dplyr
+method <- "base" #base/dplyr
 # base R - a bit slow
 # dplyr - much faster
 split_data <- spectratrait::create_data_split(dataset=plsr_data, approach=method, split_seed=use_this_seed, 
