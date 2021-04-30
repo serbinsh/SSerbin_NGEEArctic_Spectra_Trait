@@ -41,7 +41,8 @@ chn_data[chn_data==-9999]=NA
 head(chn_data)
 
 chn_data <- chn_data %>%
-  select(Sample_ID,Sample_Date=Date,USDA_Species_Code,Cmass_mg_g=C_mass,Nmass_mg_g=N_mass,LMA_gDW_m2=LMA,
+  mutate(lwc = rep(NA,dim(chn_data)[1])) %>%
+  select(Sample_ID,Sample_Date=Date,USDA_Species_Code,Cmass_mg_g=C_mass,Nmass_mg_g=N_mass,LMA_gDW_m2=LMA,LWC=lwc,
          Carea_g_m2=C_area,Narea_g_m2=N_area,CN_ratio)
 head(chn_data)
 
@@ -69,8 +70,9 @@ chn_data$Sample_ID <- as.character(chn_data$Sample_ID)
 head(chn_data)
 
 chn_data <- chn_data %>%
+  mutate(lwc = rep(NA,dim(chn_data)[1])) %>%
   select(Sample_ID,Sample_Date=Date,USDA_Species_Code=Species_USDA,Cmass_mg_g=C_mass,Nmass_mg_g=N_mass,LMA_gDW_m2=LMA,
-         Carea_g_m2=C_area,Narea_g_m2=N_area,CN_ratio=`C:N`)
+         LWC=lwc,Carea_g_m2=C_area,Narea_g_m2=N_area,CN_ratio=`C:N`)
 head(chn_data)
 
 write.csv(chn_data, 
@@ -95,8 +97,9 @@ names(chn_data)[3] <- "Sample_ID"
 
 
 chn_data <- chn_data %>%
+  mutate(lwc = rep(NA,dim(chn_data)[1])) %>%
   select(Sample_ID,Sample_Date=Date,USDA_Species_Code=Species,Cmass_mg_g=Cmass,Nmass_mg_g=Nmass,LMA_gDW_m2=LMA,
-         Carea_g_m2=Carea,Narea_g_m2=Narea,CN_ratio=CNratio)
+         LWC=lwc,Carea_g_m2=Carea,Narea_g_m2=Narea,CN_ratio=CNratio)
 head(chn_data)
 
 write.csv(chn_data, 
@@ -106,7 +109,7 @@ rm(chn_data)
 
 # 2018 SewPen CHN/LMA - temporary approach
 input_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/data/raw_data/")
-chn_data <- read.csv(file = file.path(input_dir,"Seward_2018_LMA_CN.csv"),header = T, sep = ",")
+chn_data <- read.csv(file = file.path(input_dir,"Seward_2018_LMA_LWC_CN.csv"),header = T, sep = ",")
 head(chn_data)
 
 # clean up
@@ -115,7 +118,7 @@ head(chn_data)
 
 chn_data <- chn_data %>%
   select(Sample_ID=SampleID,Sample_Date=Date,USDA_Species_Code=Species,Cmass_mg_g=Cmass,
-         Nmass_mg_g=Nmass,LMA_gDW_m2=LMA,
+         Nmass_mg_g=Nmass,LMA_gDW_m2=LMA,LWC,
          Carea_g_m2=Carea,Narea_g_m2=Narea,CN_ratio=CNratio)
 head(chn_data)
 
@@ -127,7 +130,7 @@ rm(chn_data)
 
 # 2019 SewPen CHN/LMA - temporary approach
 input_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/data/raw_data/")
-chn_data <- read.csv(file = file.path(input_dir,"Seward_2019_LMA_CN.csv"),header = T, sep = ",")
+chn_data <- read.csv(file = file.path(input_dir,"Seward_2019_LMA_LWC_CN.csv"),header = T, sep = ",")
 head(chn_data)
 
 # clean up
@@ -137,7 +140,7 @@ head(chn_data)
 chn_data <- chn_data %>%
   mutate(CNratio=Cmass/Nmass) %>%
   select(Sample_ID=SampleID,Sample_Date=Date,USDA_Species_Code=Species,Cmass_mg_g=Cmass,
-         Nmass_mg_g=Nmass,LMA_gDW_m2=LMA,
+         Nmass_mg_g=Nmass,LMA_gDW_m2=LMA,LWC,
          Carea_g_m2=Carea,Narea_g_m2=Narea,CN_ratio=CNratio)
 head(chn_data)
 

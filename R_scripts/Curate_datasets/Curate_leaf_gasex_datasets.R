@@ -104,6 +104,27 @@ plot(gasex_data$Tleaf,gasex_data$Asat)
 plot(gasex_data$PhiCO2,gasex_data$Asat)
 
 write.csv(gasex_data, file = file.path(output_dir,"NGEE-Arctic_Utqiagvik_AQfittedParams_2016.csv"), row.names = F)
+
+
+# SewPen 2019 data
+url <- "https://ngee.ornl.gov/ngeedata/NGA215_plant_phys_SP_2019/data/Seward_2019_Vcmax_Jmax.xlsx"
+Mytmpfile = tempfile()
+getBinaryURL(url, ftp.use.epsv = FALSE,crlf =TRUE)%>%writeBin(con=Mytmpfile)
+gasex_data <- readxl::read_xlsx(Mytmpfile, sheet = 2)
+head(gasex_data)
+
+# clean up
+gasex_data[gasex_data==-9999]=NA
+gasex_data <- gasex_data %>%
+  select(Sample_ID,Sample_Date,USDA_Species_Code=Species,Tair=Mean_Tair,Tleaf=Mean_Tleaf,
+         VpdL=Mean_VpdL,Vcmax_Tleaf,Jmax_Tleaf,Rd_Tleaf)
+head(gasex_data)
+hist(gasex_data$Vcmax_Tleaf)
+plot(gasex_data$Tleaf,gasex_data$Vcmax_Tleaf)
+
+write.csv(gasex_data, file = file.path(output_dir,"NGEE-Arctic_SewardPeninsula_Vcmax_Jmax_2019.csv"), 
+          row.names = F)
+
 #--------------------------------------------------------------------------------------------------#
 
 
