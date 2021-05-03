@@ -28,9 +28,17 @@ temp_data_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArct
 temp_data <- read.csv(file = file.path(temp_data_dir,"NGEE-Arctic_Barrow_2015_2016_spectra_leaf_temperatures.csv"), header=T)
 head(temp_data)
 
+# cleanup
 temp_data[temp_data==-9999]=NA
+#orig_names <- names(barrow_2015_2016_leaf_temp_data)
+#temp_data$Location <- rep("Utqiagvik",times=dim(temp_data)[1])
+#temp_data <- temp_data %>%
+#  select(Location,paste(orig_names))
+#head(temp_data)
+
 temp_data <- temp_data %>%
-  select(Sample_ID,Sample_Date=Measurement_Date,USDA_Species_Code,Air_Temperature_degC,
+  mutate(Location=rep("Utqiagvik",times=dim(temp_data)[1])) %>%
+  select(Location,Sample_ID,Sample_Date=Measurement_Date,USDA_Species_Code,Air_Temperature_degC,
          Leaf_Temperature_PreSpec_degC,Leaf_Temperature_PostSpec_degC)
 head(temp_data)  
 
@@ -67,10 +75,6 @@ rm(temp_data,temp_data_dir)
 input_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/data/compiled_data/")
 barrow_2015_2016_leaf_temp_data <- read.csv(file = file.path(input_dir,
                                                              "NGEE-Arctic_Utqiagvik_spectra_leaf_temperatures_2015_2016.csv"))
-orig_names <- names(barrow_2015_2016_leaf_temp_data)
-barrow_2015_2016_leaf_temp_data$Location <- rep("Utqiagvik",times=dim(barrow_2015_2016_leaf_temp_data)[1])
-barrow_2015_2016_leaf_temp_data <- barrow_2015_2016_leaf_temp_data %>%
-  select(Location,paste(orig_names))
 head(barrow_2015_2016_leaf_temp_data)
 
 input_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/data/compiled_data/")
