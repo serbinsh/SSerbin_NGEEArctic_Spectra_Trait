@@ -44,7 +44,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.v6")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.v15")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -149,6 +149,10 @@ lr <- NGEEArctic_Reflectance$Leaf_Reflectance %>%
   select(Sample_ID,Instrument,starts_with("Wave_"))
 head(lr)[,1:6]
 
+# remove spec outliers
+lr <- lr %>%
+  filter(Wave_480<8.2)
+
 merged_data.1 <- merge(x = spec_leaf_temps, y = lr, by = "Sample_ID")
 merged_data.2 <- merge(x = vcmax_data, y = merged_data.1, by = "Sample_ID")
 head(merged_data.2)[,1:15]
@@ -157,7 +161,7 @@ merged_data.2 <- merged_data.2 %>%
   mutate(Vcmax_Spec_Tleaf=arrhenius(Tleaf,Preferred_Spec_Tleaf_degC,Vcmax_Tleaf,54.26))
 hist(merged_data.2$Vcmax_Spec_Tleaf)
 
-Start.wave <- 500
+Start.wave <- 530
 End.wave <- 2400
 wv <- seq(Start.wave,End.wave,1)
 Spectra <- as.matrix(merged_data.2[,names(merged_data.2) %in% paste0("Wave_",wv)])
@@ -200,13 +204,16 @@ remove_sampleIDs <- c("BNL1999","BNL1991","BNL14210","BNL1996","BNL1927","BNL200
                       "BNL1952","BNL15354","BNL14207","BNL1581","BNL1841","BNL2176","BNL12958",
                       "BNL1984","BNL14204",
                       "BNL1828", # from val
-                      "BNL14209" # from val)
+                      "BNL14209", # from val,
+                      "BNL1997", # from val
+                      "BNL1950", # from val
+                      "BNL1880") # from val)
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
 
-#plsr_data <- plsr_data %>%
-#  filter(GasEx_Method=="ACi")
-
+# remove SARI4 data
+plsr_data <- plsr_data %>%
+  filter(USDA_Species_Code!="SARI4")
 #--------------------------------------------------------------------------------------------------#
 
 
