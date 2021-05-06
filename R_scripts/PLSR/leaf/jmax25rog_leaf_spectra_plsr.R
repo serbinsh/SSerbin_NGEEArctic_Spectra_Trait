@@ -38,7 +38,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Jmax25_Rogers.v1")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Jmax25_Rogers.v4")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -79,8 +79,6 @@ getwd()  # check wd
 ### Create plsr dataset
 
 # organize all Vcmax data
-Utqiagvik_2016_1pt_Vcmax <- nga_gasex_data$Utqiagvik_2016_1pt_Vcmax
-head(Utqiagvik_2016_1pt_Vcmax)
 Utqiagvik_2012_2015_VcmaxJmax_data <- nga_gasex_data$Utqiagvik_2012_2015_VcmaxJmax_data
 head(Utqiagvik_2012_2015_VcmaxJmax_data)
 SewPen_2019_VcmaxJmax_data <- nga_gasex_data$SewPen_2019_VcmaxJmax_data
@@ -98,13 +96,17 @@ vcmax_data <- rbind(Utqiagvik_2012_2015_VcmaxJmax_data2,
                          SewPen_2019_VcmaxJmax_data2)
 head(vcmax_data)
 
-# organize spec leaf temp data
-# !!NOT NEEDED FOR VC25 !!
-
 # merge data
 lr <- NGEEArctic_Reflectance$Leaf_Reflectance %>%
   select(Sample_ID,Instrument,starts_with("Wave_"))
 head(lr)[,1:6]
+
+# remove spec outliers
+lr <- lr %>%
+  filter(Wave_480<8.5)
+#  filter(Wave_480<8.2)
+#  filter(Wave_480<8.0)
+
 merged_data <- merge(x = vcmax_data, y = lr, by = "Sample_ID")
 head(merged_data)[,1:15]
 
@@ -147,11 +149,15 @@ head(plsr_data)[,1:6]
 #                       "BNL1630","BNL2145","BNL1824","BNL14204","BNL13049","BNL1987","BNL1883",
 #                       "BNL1505","BNL1984","BNL1686","BNL2001","BNL1964","BNL2107","BNL1978",
 #                       "BNL1878","BNL2820")
-# plsr_data <- plsr_data %>%
-#   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
 
-#plsr_data <- plsr_data %>%
-#  filter(plsr_data[,inVar] < 5)
+remove_sampleIDs <- c("BNL1646","BNL1681","BNL14204","BNL1581","BNL1506","BNL15355","BNL1571",
+                      "BNL1785")
+plsr_data <- plsr_data %>%
+  filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
+
+# remove SARI4 data
+plsr_data <- plsr_data %>%
+  filter(USDA_Species_Code!="SARI4")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -159,7 +165,11 @@ head(plsr_data)[,1:6]
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
 
-use_this_seed <- 23492350
+#use_this_seed <- 23492350
+
+#use_this_seed <- 264
+
+use_this_seed <- 490
 
 method <- "base" #base/dplyr
 # base R - a bit slow
@@ -236,7 +246,7 @@ if(grepl("Windows", sessionInfo()$running)){
 method <- "pls" #pls, firstPlateau, firstMin
 random_seed <- use_this_seed
 seg <- 50
-maxComps <- 16
+maxComps <- 20
 iterations <- 80
 prop <- 0.70
 if (method=="pls") {

@@ -44,7 +44,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.v15")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.v25")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -92,19 +92,19 @@ head(Utqiagvik_2012_2015_VcmaxJmax_data)
 SewPen_2019_VcmaxJmax_data <- nga_gasex_data$SewPen_2019_VcmaxJmax_data
 head(SewPen_2019_VcmaxJmax_data)
 
-plot(Utqiagvik_2012_2015_VcmaxJmax_data$Vcmax_Tleaf,Utqiagvik_2012_2015_VcmaxJmax_data$Jmax_Tleaf, pch=21, bg="blue",
-     xlim=c(0,250),ylim=c(0,250))
-points(SewPen_2019_VcmaxJmax_data$Vcmax_Tleaf,SewPen_2019_VcmaxJmax_data$Jmax_Tleaf, pch=21, bg="green")
-abline(0,1,lty=2)
-
-summary(lm(Utqiagvik_2012_2015_VcmaxJmax_data$Jmax_Tleaf~Utqiagvik_2012_2015_VcmaxJmax_data$Vcmax_Tleaf))
-summary(lm(SewPen_2019_VcmaxJmax_data$Jmax_Tleaf~SewPen_2019_VcmaxJmax_data$Vcmax_Tleaf))
-
-
-plot(Utqiagvik_2012_2015_VcmaxJmax_data$Vcmax25_Rog,Utqiagvik_2012_2015_VcmaxJmax_data$Jmax25_Rog, pch=21, bg="blue",
-     xlim=c(0,400),ylim=c(0,400))
-points(SewPen_2019_VcmaxJmax_data$Vcmax25_Rog,SewPen_2019_VcmaxJmax_data$Jmax25_Rog, pch=21, bg="green")
-abline(0,1,lty=2)
+# plot(Utqiagvik_2012_2015_VcmaxJmax_data$Vcmax_Tleaf,Utqiagvik_2012_2015_VcmaxJmax_data$Jmax_Tleaf, pch=21, bg="blue",
+#      xlim=c(0,250),ylim=c(0,250))
+# points(SewPen_2019_VcmaxJmax_data$Vcmax_Tleaf,SewPen_2019_VcmaxJmax_data$Jmax_Tleaf, pch=21, bg="green")
+# abline(0,1,lty=2)
+# 
+# summary(lm(Utqiagvik_2012_2015_VcmaxJmax_data$Jmax_Tleaf~Utqiagvik_2012_2015_VcmaxJmax_data$Vcmax_Tleaf))
+# summary(lm(SewPen_2019_VcmaxJmax_data$Jmax_Tleaf~SewPen_2019_VcmaxJmax_data$Vcmax_Tleaf))
+# 
+# 
+# plot(Utqiagvik_2012_2015_VcmaxJmax_data$Vcmax25_Rog,Utqiagvik_2012_2015_VcmaxJmax_data$Jmax25_Rog, pch=21, bg="blue",
+#      xlim=c(0,400),ylim=c(0,400))
+# points(SewPen_2019_VcmaxJmax_data$Vcmax25_Rog,SewPen_2019_VcmaxJmax_data$Jmax25_Rog, pch=21, bg="green")
+# abline(0,1,lty=2)
 
 Utqiagvik_2016_1pt_Vcmax2 <- Utqiagvik_2016_1pt_Vcmax %>%
   mutate(Method=rep("1pt",dim(Utqiagvik_2016_1pt_Vcmax)[1])) %>%
@@ -133,6 +133,8 @@ head(Utqiagvik_temp_data)
 
 Utqiagvik_temp_data$Year <- lubridate::year(as.Date(as.character(Utqiagvik_temp_data$Sample_Date), "%Y%m%d"))
 Utqiagvik_temp_data <- Utqiagvik_temp_data %>%
+  #mutate(Preferred_Spec_Tleaf_degC=rowMeans(select(.,Leaf_Temperature_PostSpec_degC,
+  #                                                 Leaf_Temperature_PreSpec_degC),na.rm=T)) %>%
   #mutate(Preferred_Spec_Tleaf_degC=ifelse(Year=="2015",Tair_degC,Leaf_Temperature_PostSpec_degC)) %>%
   mutate(Preferred_Spec_Tleaf_degC=ifelse(Year=="2015",Leaf_Temperature_PreSpec_degC,Leaf_Temperature_PostSpec_degC)) %>%
   select(Sample_ID,Spec_Tair_degC=Tair_degC,Preferred_Spec_Tleaf_degC)
@@ -151,7 +153,9 @@ head(lr)[,1:6]
 
 # remove spec outliers
 lr <- lr %>%
+#  filter(Wave_480<8.5)
   filter(Wave_480<8.2)
+#  filter(Wave_480<8.0)
 
 merged_data.1 <- merge(x = spec_leaf_temps, y = lr, by = "Sample_ID")
 merged_data.2 <- merge(x = vcmax_data, y = merged_data.1, by = "Sample_ID")
@@ -161,7 +165,7 @@ merged_data.2 <- merged_data.2 %>%
   mutate(Vcmax_Spec_Tleaf=arrhenius(Tleaf,Preferred_Spec_Tleaf_degC,Vcmax_Tleaf,54.26))
 hist(merged_data.2$Vcmax_Spec_Tleaf)
 
-Start.wave <- 530
+Start.wave <- 500
 End.wave <- 2400
 wv <- seq(Start.wave,End.wave,1)
 Spectra <- as.matrix(merged_data.2[,names(merged_data.2) %in% paste0("Wave_",wv)])
@@ -190,25 +194,26 @@ head(plsr_data)[,1:6]
 
 
 ### outlier cleanup
-# remove_sampleIDs <- c("BNL1506","BNL1581","BNL1999","BNL1503","BNL2808","BNL1828","BNL1926","BNL1684",
-#                       "BNL1630","BNL2145","BNL1824","BNL14204","BNL13049","BNL1987","BNL1883",
-#                       "BNL1505","BNL1984","BNL1686","BNL2001","BNL1964","BNL2107","BNL1978",
-#                       "BNL1878","BNL2820")
-# plsr_data <- plsr_data %>%
-#   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
-
-#plsr_data <- plsr_data %>%
-#  filter(plsr_data[,inVar] < 5)
-
 remove_sampleIDs <- c("BNL1999","BNL1991","BNL14210","BNL1996","BNL1927","BNL2000","BNL2001",
                       "BNL1952","BNL15354","BNL14207","BNL1581","BNL1841","BNL2176","BNL12958",
-                      "BNL1984","BNL14204",
+                      "BNL1984","BNL14204","BNL15359",#,
                       "BNL1828", # from val
                       "BNL14209", # from val,
                       "BNL1997", # from val
                       "BNL1950", # from val
-                      "BNL1880") # from val)
-plsr_data <- plsr_data %>%
+                      "BNL1880", # from val
+                      
+                      
+                      "BNL2023") # from val)
+
+#"BNL1982",,
+# remove_sampleIDs <- c("BNL1984","BNL1999","BNL14204","BNL1982","BNL14207",
+#                       "BNL12958",
+#                       
+#                       
+#                       "BNL1991")
+
+plsr_data <- plsr_data %>% 
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
 
 # remove SARI4 data
@@ -222,6 +227,7 @@ plsr_data <- plsr_data %>%
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
 
 use_this_seed <- 9245
+#use_this_seed <- 924582358
 
 method <- "base" #base/dplyr
 # base R - a bit slow
@@ -298,7 +304,7 @@ if(grepl("Windows", sessionInfo()$running)){
 method <- "firstMin" #pls, firstPlateau, firstMin
 random_seed <- use_this_seed
 seg <- 50
-maxComps <- 16
+maxComps <- 20
 iterations <- 80
 prop <- 0.70
 if (method=="pls") {
