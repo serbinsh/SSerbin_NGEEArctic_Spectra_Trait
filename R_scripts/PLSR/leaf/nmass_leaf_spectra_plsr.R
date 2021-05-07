@@ -31,7 +31,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Nmass")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Nmass.v4")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -46,7 +46,6 @@ head(NGEEArctic_Reflectance$Leaf_Reflectance)[,1:6]
 
 # What is the target variable?
 inVar <- "Nmass_mg_g"
-#inVar <- "Narea_g_m2"
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -108,7 +107,10 @@ remove_sampleIDs <- c("BNL1978","BNL1820","BNL1819","BNL1966","BNL1267","BNL1967
                       "BNL2034","BNL1769","BNL1984","BNL2338","BNL13182",
                       "BNL1958","BNL2033","BNL1651","BNL1703","BNL1573",
                       "BNL2820","BNL2035","BNL1893","BNL1896","BNL2117",
-                      "BNL2106","BNL13003")
+                      "BNL2106","BNL13003",
+                      
+                      "BNL1329","BNL2340","BNL2274","BNL1882","BNL13199",
+                      "BNL13192","BNL13197","BNL1684")
 
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs)
@@ -118,12 +120,10 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
+#use_this_seed <- 55555
+use_this_seed <- 7777777
 
-use_this_seed <- 31245612
-#use_this_seed <- 824567889
-#use_this_seed <- 45678
-
-method <- "base" #base/dplyr
+method <- "dplyr" #base/dplyr
 # base R - a bit slow
 # dplyr - much faster
 split_data <- spectratrait::create_data_split(dataset=plsr_data, approach=method, split_seed=use_this_seed, 
@@ -198,7 +198,7 @@ if(grepl("Windows", sessionInfo()$running)){
 method <- "pls" #pls, firstPlateau, firstMin
 random_seed <- use_this_seed
 seg <- 50
-maxComps <- 16
+maxComps <- 20
 iterations <- 80
 prop <- 0.70
 if (method=="pls") {
@@ -219,8 +219,8 @@ dev.off();
 
 #--------------------------------------------------------------------------------------------------#
 ### Fit final model - using leave-one-out cross validation
-plsr.out <- plsr(as.formula(paste(inVar,"~","Spectra")),scale=FALSE,ncomp=nComps,validation="LOO",
-                 trace=FALSE,data=cal.plsr.data)
+plsr.out <- plsr(as.formula(paste(inVar,"~","Spectra")),scale=FALSE,ncomp=nComps,validation="CV",
+                 segments=seg, segment.type="interleaved", trace=FALSE, data=cal.plsr.data)
 fit <- plsr.out$fitted.values[,1,nComps]
 pls.options(parallel = NULL)
 
