@@ -103,8 +103,8 @@ head(lr)[,1:6]
 
 # remove spec outliers
 lr <- lr %>%
-  filter(Wave_480<8.5)
-#  filter(Wave_480<8.2)
+#  filter(Wave_480<8.5)
+  filter(Wave_480<8.2)
 #  filter(Wave_480<8.0)
 
 merged_data <- merge(x = vcmax_data, y = lr, by = "Sample_ID")
@@ -136,22 +136,13 @@ plsr_data <- plsr_data[complete.cases(plsr_data[,names(plsr_data) %in%
                                                   c(inVar,paste0("Wave_",wv))]),]
 head(plsr_data)[,1:6]
 
-
 ### outlier cleanup
-#remove_sampleIDs <- c("BNL13145","BNL13050","BNL13079","BNL13147","BNL1966","BNL1978",
-#                      "BNL13151","BNL1391","BNL13186")
-# remove <- which(plsr_dataset$Sample_Barcode %in% c(1564, 1567, 1581, 1582, 1630, 1646, 1656, 1786,
-#                                                    1565, 1569, 1578, 1631, 1657, 1678, 1747, 1785,
-#                                                    1788,1644, 1559,1558,1999,1991,1964,1984,1987,2075,1841,
-#                                                    1839,2117,1948,1997,1828,1879,1837,1926,2001,1980,
-#                                                    1884, 1953, 1952, 1927, 1996))
-# remove_sampleIDs <- c("BNL1506","BNL1581","BNL1999","BNL1503","BNL2808","BNL1828","BNL1926","BNL1684",
-#                       "BNL1630","BNL2145","BNL1824","BNL14204","BNL13049","BNL1987","BNL1883",
-#                       "BNL1505","BNL1984","BNL1686","BNL2001","BNL1964","BNL2107","BNL1978",
-#                       "BNL1878","BNL2820")
-
 remove_sampleIDs <- c("BNL1646","BNL1681","BNL14204","BNL1581","BNL1506","BNL15355","BNL1571",
-                      "BNL1785")
+                      "BNL1785",
+
+                      "BNL1572", # val
+                      "BNL1630", # val
+                      "BNL1786") # val
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
 
@@ -164,12 +155,9 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
+#use_this_seed <- 5055
+use_this_seed <- 5061
 
-#use_this_seed <- 23492350
-
-#use_this_seed <- 264
-
-use_this_seed <- 490
 
 method <- "base" #base/dplyr
 # base R - a bit slow

@@ -44,7 +44,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.v25")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.final")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -109,15 +109,15 @@ head(SewPen_2019_VcmaxJmax_data)
 Utqiagvik_2016_1pt_Vcmax2 <- Utqiagvik_2016_1pt_Vcmax %>%
   mutate(Method=rep("1pt",dim(Utqiagvik_2016_1pt_Vcmax)[1])) %>%
   select(Location,Method,Sample_ID,Sample_Date,USDA_Species_Code,
-         Tleaf,Vcmax_Tleaf=VcmaxT_one_point)
+         Tleaf,Vcmax_Tleaf=VcmaxT_one_point,Vcmax25_Rog,Vcmax25_Bern)
 Utqiagvik_2012_2015_VcmaxJmax_data2 <- Utqiagvik_2012_2015_VcmaxJmax_data %>%
   mutate(Method=rep("ACi",dim(Utqiagvik_2012_2015_VcmaxJmax_data)[1])) %>%
   select(Location,Method,Sample_ID,Sample_Date,USDA_Species_Code,
-         Tleaf,Vcmax_Tleaf)
+         Tleaf,Vcmax_Tleaf,Vcmax25_Rog,Vcmax25_Bern)
 SewPen_2019_VcmaxJmax_data2 <- SewPen_2019_VcmaxJmax_data %>%
   mutate(Method=rep("ACi",dim(SewPen_2019_VcmaxJmax_data)[1])) %>%
   select(Location,Method,Sample_ID,Sample_Date,USDA_Species_Code,
-         Tleaf,Vcmax_Tleaf)
+         Tleaf,Vcmax_Tleaf,Vcmax25_Rog,Vcmax25_Bern)
 vcmax_data <- rbind(Utqiagvik_2012_2015_VcmaxJmax_data2,Utqiagvik_2016_1pt_Vcmax2,
                          SewPen_2019_VcmaxJmax_data2)
 head(vcmax_data)
@@ -176,7 +176,7 @@ head(sample_info)
 sample_info2 <- sample_info %>%
   select(Location, GasEx_Method=Method, Sample_ID, Sample_Date, USDA_Species_Code, 
          Spec_Instrument=Instrument, Spec_Tair_degC, Tleaf, Preferred_Spec_Tleaf_degC, 
-         Vcmax_Tleaf,Vcmax_Spec_Tleaf)
+         Vcmax_Tleaf,Vcmax25_Rog,Vcmax25_Bern,Vcmax_Spec_Tleaf)
 head(sample_info2)
 
 plsr_data <- data.frame(sample_info2,Spectra)
@@ -225,9 +225,10 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
-
-use_this_seed <- 9245
+#use_this_seed <- 9245
 #use_this_seed <- 924582358
+
+use_this_seed <- 22222
 
 method <- "base" #base/dplyr
 # base R - a bit slow
@@ -325,8 +326,8 @@ dev.off();
 
 #--------------------------------------------------------------------------------------------------#
 ### Fit final model - using leave-one-out cross validation
-plsr.out <- plsr(as.formula(paste(inVar,"~","Spectra")),scale=FALSE,ncomp=nComps,validation="LOO",
-                 trace=FALSE,data=cal.plsr.data)
+plsr.out <- plsr(as.formula(paste(inVar,"~","Spectra")),scale=FALSE,ncomp=nComps,validation="CV",
+                 segments=seg, segment.type = "interleaved", trace=FALSE, data=cal.plsr.data)
 fit <- plsr.out$fitted.values[,1,nComps]
 pls.options(parallel = NULL)
 

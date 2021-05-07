@@ -52,7 +52,6 @@ load(file.path(data_dir,"NGEEArctic_Leaf_and_Canopy_Reflectance.RData"))
 head(NGEEArctic_Reflectance$Leaf_Reflectance)[,1:6]
 
 # What is the target variable?
-#inVar <- "Nmass_mg_g"
 inVar <- "Narea_g_m2"
 #--------------------------------------------------------------------------------------------------#
 
@@ -76,14 +75,21 @@ getwd()  # check wd
 lr <- NGEEArctic_Reflectance$Leaf_Reflectance %>%
   select(Sample_ID,Instrument,starts_with("Wave_"))
 head(lr)[,1:6]
+
+# remove spec outliers
+lr <- lr %>%
+  filter(Wave_830>35)
+
 merged_data <- merge(x = chn_lma_data, y = lr, by = "Sample_ID")
 head(merged_data)[,1:15]
+unique(merged_data$Sample_Date)
 
 Start.wave <- 500
 End.wave <- 2400
 wv <- seq(Start.wave,End.wave,1)
 Spectra <- as.matrix(merged_data[,names(merged_data) %in% paste0("Wave_",wv)])
 head(Spectra)[1:6,1:10]
+
 sample_info <- merged_data[,names(merged_data) %notin% paste0("Wave_",seq(350,2500,1))]
 head(sample_info)
 
@@ -107,7 +113,15 @@ head(plsr_data)[,1:6]
 
 ### outlier cleanup
 remove_sampleIDs <- c("BNL13145","BNL13050","BNL13079","BNL13147","BNL1966","BNL1978",
-                      "BNL13151","BNL1391","BNL13186")
+                      "BNL13151","BNL1391","BNL13186",
+                      "BNL2060",
+                      "BNL13192",
+                      "BNL1548",
+                       "BNL2058")
+                      # "BNL1559",
+                      # "BNL2338",
+                      # "BNL2117",
+                      # "BNL14210")
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
 
@@ -119,10 +133,9 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
+use_this_seed <- 6415
 
-use_this_seed <- 1258934
-
-method <- "base" #base/dplyr
+method <- "dplyr" #base/dplyr
 # base R - a bit slow
 # dplyr - much faster
 split_data <- spectratrait::create_data_split(dataset=plsr_data, approach=method, split_seed=use_this_seed, 
@@ -197,7 +210,7 @@ if(grepl("Windows", sessionInfo()$running)){
 method <- "pls" #pls, firstPlateau, firstMin
 random_seed <- use_this_seed
 seg <- 50
-maxComps <- 16
+maxComps <- 20
 iterations <- 80
 prop <- 0.70
 if (method=="pls") {
@@ -250,7 +263,7 @@ cal.plsr.output <- data.frame(cal.plsr.data[, which(names(cal.plsr.data) %notin%
 cal.plsr.output <- cal.plsr.output %>%
   mutate(PLSR_CV_Residuals = PLSR_CV_Predicted-get(inVar))
 head(cal.plsr.output)
-cal.R2 <- round(pls::R2(plsr.out)[[1]][nComps],2)
+cal.R2 <- round(pls::R2(plsr.out, intercept=F)[[1]][nComps],2)
 cal.RMSEP <- round(sqrt(mean(cal.plsr.output$PLSR_CV_Residuals^2)),2)
 
 val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin% "Spectra")],
@@ -260,7 +273,7 @@ val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin%
 val.plsr.output <- val.plsr.output %>%
   mutate(PLSR_Residuals = PLSR_Predicted-get(inVar))
 head(val.plsr.output)
-val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data)[[1]][nComps],2)
+val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data, intercept=F)[[1]][nComps],2)
 val.RMSEP <- round(sqrt(mean(val.plsr.output$PLSR_Residuals^2)),2)
 
 rng_quant <- quantile(cal.plsr.output[,inVar], probs = c(0.001, 0.999))
@@ -385,7 +398,7 @@ rmsep_percrmsep <- spectratrait::percent_rmse(plsr_dataset = val.plsr.output,
                                               range="full")
 RMSEP <- rmsep_percrmsep$rmse
 perc_RMSEP <- rmsep_percrmsep$perc_rmse
-r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data)$val[nComps+1],2)
+r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data, intercept=F)$val[nComps],2)
 expr <- vector("expression", 3)
 expr[[1]] <- bquote(R^2==.(r2))
 expr[[2]] <- bquote(RMSEP==.(round(RMSEP,2)))

@@ -44,7 +44,11 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Jmax_Tleaf.v1")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Jmax_Tleaf.v9")
+#use_this_seed <- 40489
+#use_this_seed <- 50489
+use_this_seed <- 90491 # 8
+use_this_seed <- 90489 # 9
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -212,8 +216,10 @@ remove_sampleIDs <- c("BNL14204","BNL1646","BNL15354","BNL1630","BNL12958","BNL1
                       
                       "BNL1591","BNL1785","BNL14203",
                       
-                      "BNL1571") # val
-
+                      "BNL1571", # val
+                      "BNL12956", # val
+                      "BNL12957", # val
+                      "BNL13051","BNL1786") #val
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs)
 
@@ -226,15 +232,6 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
-
-#use_this_seed <- 1394235
-#use_this_seed <- 92134
-#use_this_seed <- 14551
-
-#use_this_seed <- 231
-#use_this_seed <- 2468
-use_this_seed <- 941
-
 
 method <- "base" #base/dplyr
 # base R - a bit slow
@@ -310,8 +307,8 @@ if(grepl("Windows", sessionInfo()$running)){
 
 method <- "firstMin" #pls, firstPlateau, firstMin
 random_seed <- use_this_seed
-seg <- 50
-maxComps <- 20
+seg <- 40
+maxComps <- 16
 iterations <- 80
 prop <- 0.70
 if (method=="pls") {
@@ -333,7 +330,7 @@ dev.off();
 #--------------------------------------------------------------------------------------------------#
 ### Fit final model - using leave-one-out cross validation
 plsr.out <- plsr(as.formula(paste(inVar,"~","Spectra")),scale=FALSE,ncomp=nComps,validation="LOO",
-                 trace=FALSE,data=cal.plsr.data)
+                 trace=FALSE, data=cal.plsr.data)
 fit <- plsr.out$fitted.values[,1,nComps]
 pls.options(parallel = NULL)
 
