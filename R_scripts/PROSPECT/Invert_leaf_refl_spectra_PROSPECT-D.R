@@ -177,8 +177,8 @@ print("Starting Inversion:")
 print(paste0("Inverting: ", dim(sub_refl_data)[1]))
 print(" ")
 pb <- txtProgressBar(min = 0, max = dim(sub_refl_data)[1], width= 50,style = 3)
-#system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
-system.time(for (i in seq_along(1:6) ) {
+system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
+#system.time(for (i in seq_along(1:6) ) {
   print(" ")
   print(paste0("Inverting: ",unlist(refl_spec_info2[i,title_var])))
   #https://cran.r-project.org/web/packages/BayesianTools/vignettes/BayesianTools.html#the-different-mcmc-samplers
@@ -287,8 +287,8 @@ names(mod.params) <- c("N.mu", "N.q25", "N.q975", "Cab.mu", "Cab.q25", "Cab.q975
 ## Plot comparison
 pdf(file=file.path(out.dir,'PROSPECTD_Inversion_Diagnostics.pdf'),height=8,width=9)
 par(mfrow=c(1,1), mar=c(4.3,4.3,1.0,4.3), oma=c(0.1,0.1,0.1,0.1)) # B L T R
-#for (i in seq_along(1:dim(sub_refl_data)[1] )) {
-for (i in seq_along(1:6) ) {
+for (i in seq_along(1:dim(sub_refl_data)[1] )) {
+#for (i in seq_along(1:6) ) {
   plot(waves,output.LRT$obs.Reflectance[i,], type="l", col="black",xlab="Wavelength (nm)",ylab="Reflectance (0-1)",
        lwd=3,main=paste0(output.LRT$Spec.Info[i,1]," ", output.LRT$Spec.Info[i,3]) )
   lines(prospect_waves,prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], version=prospect_ver)[,1],col="red",lwd=2)
@@ -335,8 +335,8 @@ names(leaf_vis_absorption_final) <- c(names_output_sample_info,"Leaf_VIS_Spectra
 ## Licor Fs absorption
 data(sensor.rsr)
 licor.abs <- array(NA,dim=c(dim(mod.params)[1],3))
-#for (i in 1:dim(mod.params)[1] ) {
-for (i in 1:6 ) {
+for (i in 1:dim(mod.params)[1] ) {
+#for (i in 1:6 ) {
   # Using observed refl data instead of modeled
   #refl <- spectral.response(unlist(sub_refl_data[i,]), 'licor')
   # Using modeled reflectance spectra
