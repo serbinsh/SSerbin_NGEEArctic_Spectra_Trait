@@ -38,6 +38,11 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
+Rplots.pdf
+
+# SLURM
+prospect_job-*.*out
+
 # MacOSX
 .DS_Store
 ._DS_Store
