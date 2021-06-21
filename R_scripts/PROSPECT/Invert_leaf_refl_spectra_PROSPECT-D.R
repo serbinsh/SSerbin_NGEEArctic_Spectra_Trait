@@ -46,7 +46,7 @@ ok <- require(rrtm) ; if (! ok) {
 #library(PEcAnRTM)
 #library(rrtm)
 
-list.of.packages <- c("here","PEcAnRTM")
+list.of.packages <- c("here","PEcAnRTM","dplyr")
 invisible(lapply(list.of.packages, library, character.only = TRUE))
 
 # not in
