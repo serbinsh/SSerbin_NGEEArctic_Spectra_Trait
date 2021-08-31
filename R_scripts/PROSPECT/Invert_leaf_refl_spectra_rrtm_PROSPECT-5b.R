@@ -3,6 +3,7 @@
 #   Invert leaf reflectance data to estimate transmittance and calculate absorption
 #   
 #   Approach: BayesianTools DEzs MCMC algorithm  (http://dream.r-forge.r-project.org/)
+#   Using fewer-depends rrtm implementation of PROSPECT (https://github.com/ashiklom/rrtm)
 #
 #   Author: Shawn P. Serbin
 #
@@ -10,7 +11,7 @@
 #
 #   Project: NGEE-Arctic
 #
-#    --- Last updated:  08.26.2021 By Shawn P. Serbin <sserbin@bnl.gov>
+#    --- Last updated:  08.31.2021 By Shawn P. Serbin <sserbin@bnl.gov>
 ####################################################################################################
 
 
@@ -23,36 +24,17 @@ closeAllConnections()   # close any open connections to files
 
 #--------------------------------------------------------------------------------------------------#
 # load libraries
-ok <- require(PEcAn.assim.batch) ; if (! ok) {
-  devtools::install_github("PEcAnProject/pecan", subdir="modules/assim.batch", 
-                           ref = "develop") # use development version of PEcAn
-} else {
-  print("*** Package found: PEcAn.assim.batch ***")
-}
-
-ok <- require(PEcAnRTM) ; if (! ok) {
-  devtools::install_github("PEcAnProject/pecan", subdir="modules/rtm",
-                           ref = "develop") # use development version of PEcAn
-} else {
-  print("*** Package found: PEcAnRTM ***")
-}
-
 ok <- require(rrtm) ; if (! ok) {
   devtools::install_github("ashiklom/rrtm")
 } else {
   print("*** Package found: rrtm ***")
 }
 
-#library(PEcAnRTM)
-#library(rrtm)
-
-list.of.packages <- c("here","PEcAnRTM","dplyr")
+list.of.packages <- c("here", "dplyr", "BayesianTools", "rrtm")
 invisible(lapply(list.of.packages, library, character.only = TRUE))
 
 # not in
 `%notin%` <- Negate(`%in%`)
-
-custom_prior <- TRUE # TRUE/FALSE
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -88,7 +70,7 @@ spectra <- droplevels(dataset[,spec_waves])
 
 #--------------------------------------------------------------------------------------------------#
 ## Output directory
-out.dir <- file.path(here::here(),"R_Output","PROSPECTD",site_select,samp_date,'Range_400_700nm')
+out.dir <- file.path(here::here(),"R_Output","PROSPECT5b",site_select,samp_date,'Range_400_700nm')
 if (! file.exists(out.dir)) dir.create(out.dir,recursive=TRUE)
 #--------------------------------------------------------------------------------------------------#
 
@@ -135,7 +117,7 @@ output.LRT <- list(Spec.Info=array(NA,dim=c(dim(output_sample_info_all)[1],dim(o
                    mod.Reflectance=array(NA,dim=c(dim(sub_refl_data)[1],length(prospect_waves))),
                    mod.Transmittance=array(NA,dim=c(dim(sub_refl_data)[1],length(prospect_waves))))
 
-mod.params <- array(NA,dim=c(dim(sub_refl_data)[1],21)) # PD param output
+mod.params <- array(NA,dim=c(dim(sub_refl_data)[1],18)) # PD param output
 inv.samples <- NA
 # names: N.mu, N.q25, N.q975, Cab.mu, Cab.q25, Cab.q75, Car.mu, Car.q25, Car.q75, Canth.mu,
 # Canth.q25, Canth.q75, Cbrown.mu, Cbrown.q25, Cbrown.q75,
@@ -145,28 +127,75 @@ inv.samples <- NA
 
 #--------------------------------------------------------------------------------------------------#
 ### Run inversion
-prospect_ver <- "D"
+
+# setup likelihood function
+likelihood <- function(params) {
+  #N, Cab, Car, Cbrown, Cw, Cm
+  mod <- prospect5(params[1], params[2], params[3], params[4], params[5], 
+                   params[6])
+  sum(dnorm(obs, mod[["reflectance"]], log = TRUE))
+  #mod <- rrtm::prospect5(params[1], params[2], params[3], params[4], params[5],
+  #                       params[6])$reflectance[min(which(prospect_waves %in% waves, 
+  #                                                 arr.ind = TRUE)):2101]
+  #sum(dnorm(obs, mod, log = TRUE))
+}
+# !! in here the likelihood assumes the spectra to invert is labeled "obs"
 
 # setup prospect error envelope list
 p.refl.stats <- list(lower = array(data=NA,c(dim(sub_refl_data)[1],2101)),
                      upper = array(data=NA,c(dim(sub_refl_data)[1],2101)))
 
-# setup inversion model
-model <- function(x) prospect(x, prospect_ver)[min(which(prospect_waves %in% waves, 
-                                                         arr.ind = TRUE)):2101,1] # subset
+# create prior
+# N 
+curve(dnorm(x, 1, 5), 1, 5)
+# Cab density
+#curve(dnorm(x, 40, 15), 0, 120)
+curve(dlnorm(x, 4.0, 0.28), 0, 120)
+# Car density
+curve(dlnorm(x, 2.1, 0.7), 0, 40)
+#curve(dgamma(x, 2.1, 0.2), 0, 40)
+# Cbrown density
+curve(dnorm(x, 0.07, 0.04), 0, 1)
+#curve(dlnorm(x, 0.01, 3), 0, 1)
+#curve(dgamma(x, 2, 12), 0, 1)
+# Cw density
+curve(dlnorm(x, -4.456, 1.216), 0, 0.2)
+# Cm density
+#curve(dlnorm(x, -5.15, 1.328), 0, 0.15)
+curve(dlnorm(x, -4.15, 1.328), 0, 0.15)
+# resid
+curve(dexp(x, 10))
 
-if (custom_prior) {
-  prior <- prospect_bt_prior("D")
-  prior$lower <- c(1,5,1,1,0,0,0,0) # "N"      "Cab"    "Car"    "Canth"  "Cbrown" "Cw"     "Cm" , resid
-  #prior$upper <- c(1,Inf,80,80,Inf,Inf,Inf,Inf) # "N"      "Cab"    "Car"    "Canth"  "Cbrown" "Cw"     "Cm" , resid
-  prior$upper <- c(1,Inf,25,5,1,Inf,Inf,Inf) # "N"      "Cab"    "Car"    "Canth"  "Cbrown" "Cw"     "Cm" , resid
-  prior$best <- c(2,55,8,2.5,0.003,0.014,0.001,0.001)
-  
-  #cust_prior <- list(Cab = list('Cab', 'lnorm', log(3.6683201), 0.1952258, 1))
-  #prior <- prospect_bt_prior("D", custom_prior=cust_prior)
-} else {
-  prior <- prospect_bt_prior("D")
-}
+prior <- createPrior(
+  density = function(x) {
+    # Note: Truncated at zero
+    N <- dnorm(x[1], 1, 5, log = TRUE)
+    Cab <- dlnorm(x[2], 4.0, 0.28, log = TRUE)
+    Car <- dlnorm(x[3], 2.1, 0.7, log = TRUE)
+    Cbrown <- dnorm(x[4], 0.07, 0.04, log = TRUE)
+    Cw <- dlnorm(x[5], -4.456, 1.216, log = TRUE)
+    Cm <- dlnorm(x[6], -4.15, 1.328, log = TRUE)
+    rsd <- dexp(x[7], 10, log = TRUE)
+    N + Cab + Car + Cbrown + Cw + Cm + rsd
+  },
+  sampler = function(n = 1) {
+    N <- rnorm(n, 1, 5)
+    Cab <- rlnorm(n, 4.0, 0.28)
+    Car <- rlnorm(n, 2.1, 0.7)
+    Cbrown <- rnorm(n, 0.07, 0.04)
+    Cw <- rlnorm(n, -4.456, 1.216)
+    Cm <- rlnorm(n, -4.15, 1.328)
+    rsd <- rexp(n, 10)
+    cbind(N, Cab, Car, Cbrown, Cw, Cm, rsd)
+  },
+  lower = c(1, 0, 0, 0, 0, 0, 0)
+)
+
+# setup the inversion
+setup <- createBayesianSetup(
+  likelihood = likelihood,
+  prior = prior
+)
 
 # Plot title variable
 title_var <- "Spectra_Name"
@@ -177,29 +206,33 @@ print("Starting Inversion:")
 print(paste0("Inverting: ", dim(sub_refl_data)[1]))
 print(" ")
 pb <- txtProgressBar(min = 0, max = dim(sub_refl_data)[1], width= 50,style = 3)
-system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
-#system.time(for (i in seq_along(1:6) ) {
+#system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
+system.time(for (i in seq_along(1:3) ) {
   print(" ")
   print(paste0("Inverting: ",unlist(refl_spec_info2[i,title_var])))
-  #https://cran.r-project.org/web/packages/BayesianTools/vignettes/BayesianTools.html#the-different-mcmc-samplers
-  #Metropolis, DE, DEzs, DREAM, DREAMzs
-  samples <- invert_bt(observed = t(sub_refl_data[i,]), model = model, prior = prior,
-                       custom_settings = list(init = list(iterations = 2000),
-                                              loop = list(iterations = 1000),
-                                              other = list(sampler = "DEzs",
-                                                           max_iter = 1e6, min_samp = 5000, threshold = 1.1)))
+  obs <- unlist(sub_refl_data[i,])
+  settings <- list(iterations = 45000)
+  samples <- BayesianTools::runMCMC(setup, settings = settings)
+  #samples <- BayesianTools::runMCMC(setup)
+  
   samples_burned <- PEcAn.assim.batch::autoburnin(BayesianTools::getSample(samples, coda = TRUE), method = 'gelman.plot')
+  #samples_burned <- BayesianTools::getSample(samples, coda = TRUE)
   mean_estimates <- do.call(cbind, summary(samples_burned)[c('statistics', 'quantiles')])
+  row.names(mean_estimates) <- c("N", "Cab", "Car", "Cbrown", "Cw", "Cm", "resid")
   
   # include process error in error envelop (i.e. generate prediction interval)
-  n_target <- 1000
+  #n_target <- 1000
   spec.length <- 2101
   param.samples <- do.call(rbind, samples_burned)
+  if(nrow(param.samples)<1000) n_target <- nrow(param.samples) else n_target <- 1000 
   param.samples <- param.samples[sample(nrow(param.samples), n_target), ]
   RT_pred <- array(data=NA,c(n_target,2101))
   print("*** Calculating error stats ***")
   for (r in seq_len(n_target)) {
-    perturbed.prospect.ref <- rnorm(spec.length,prospect(param.samples[r,1:7], prospect_ver)[,1], param.samples[r,6])
+    perturbed.prospect.ref <- rnorm(spec.length, rrtm::prospect5(param.samples[r,1], param.samples[r,2],
+                                                                param.samples[r,3], param.samples[r,4],
+                                                                param.samples[r,5], param.samples[r,6])$reflectance,
+                                    param.samples[r,7])
     RT_pred[r,] <- perturbed.prospect.ref
   }
   
@@ -213,25 +246,25 @@ system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
   plot(samples_burned)
   dev.off()
   
+  
   # Generate modeled spectra
-  if (prospect_ver=="D") {
-    num_params <- 7
-  }
+  num_params <- 6 # PROSPECT-5b
   input.params <- as.vector(unlist(mean_estimates[,1]))[1:num_params]
-  LRT <- prospect(param = input.params, version=prospect_ver)
+  LRT <- prospect5(input.params[1], input.params[2], input.params[3], input.params[4],
+                   input.params[5], input.params[6])
   output_sample_info <- droplevels(output_sample_info_all[i,])
   
   # for testing
-  #output_sample_info
-  #str(output_sample_info)
-  #unlist(lapply(output_sample_info, as.character))
-  #output.LRT2 <- output.LRT
-  #output.LRT2$Spec.Info[i,] <- unlist(lapply(output_sample_info, as.character))
+  # output_sample_info
+  # str(output_sample_info)
+  # unlist(lapply(output_sample_info, as.character))
+  # output.LRT2 <- output.LRT
+  # output.LRT2$Spec.Info[i,] <- unlist(lapply(output_sample_info, as.character))
   
   output.LRT$Spec.Info[i,] <- unlist(lapply(output_sample_info, as.character))
   output.LRT$obs.Reflectance[i,] <- as.vector(unlist(sub_refl_data[i,]))
-  output.LRT$mod.Reflectance[i,] <- LRT[,1]
-  output.LRT$mod.Transmittance[i,] <- LRT[,2]
+  output.LRT$mod.Reflectance[i,] <- LRT$reflectance
+  output.LRT$mod.Transmittance[i,] <- LRT$transmittance
   
   # Extract results
   mod.params[i,] <- c(mean_estimates[row.names(mean_estimates)=="N",colnames(mean_estimates)=="Mean"],
@@ -243,9 +276,9 @@ system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
                       mean_estimates[row.names(mean_estimates)=="Car",colnames(mean_estimates)=="Mean"],
                       mean_estimates[row.names(mean_estimates)=="Car",colnames(mean_estimates)=="25%"],
                       mean_estimates[row.names(mean_estimates)=="Car",colnames(mean_estimates)=="97.5%"],
-                      mean_estimates[row.names(mean_estimates)=="Canth",colnames(mean_estimates)=="Mean"],
-                      mean_estimates[row.names(mean_estimates)=="Canth",colnames(mean_estimates)=="25%"],
-                      mean_estimates[row.names(mean_estimates)=="Canth",colnames(mean_estimates)=="97.5%"],
+                      #mean_estimates[row.names(mean_estimates)=="Canth",colnames(mean_estimates)=="Mean"],
+                      #mean_estimates[row.names(mean_estimates)=="Canth",colnames(mean_estimates)=="25%"],
+                      #mean_estimates[row.names(mean_estimates)=="Canth",colnames(mean_estimates)=="97.5%"],
                       mean_estimates[row.names(mean_estimates)=="Cbrown",colnames(mean_estimates)=="Mean"],
                       mean_estimates[row.names(mean_estimates)=="Cbrown",colnames(mean_estimates)=="25%"],
                       mean_estimates[row.names(mean_estimates)=="Cbrown",colnames(mean_estimates)=="97.5%"],
@@ -267,7 +300,6 @@ system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
   
   flush.console()
   
-  
 }) ## End of inversion loop
 #--------------------------------------------------------------------------------------------------#
 
@@ -277,9 +309,12 @@ system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
 # names: N.mu, N.q25, N.q975, Cab.mu, Cab.q25, Cab.q75, Car.mu, Car.q25, Car.q75,
 # Cw.mu, Cw.q25, Cw.q75, Cm.mu, Cm.q25, Cm.q75
 mod.params <- as.data.frame(mod.params)
+#names(mod.params) <- c("N.mu", "N.q25", "N.q975", "Cab.mu", "Cab.q25", "Cab.q975", "Car.mu", "Car.q25",
+#                       "Car.q975", "Canth.mu", "Canth.q25", "Canth.q975", "Cbrown.mu", "Cbrown.q25", 
+#                       "Cbrown.q975","Cw.mu", "Cw.q25", "Cw.q975", "Cm.mu", "Cm.q25", "Cm.q975")
 names(mod.params) <- c("N.mu", "N.q25", "N.q975", "Cab.mu", "Cab.q25", "Cab.q975", "Car.mu", "Car.q25",
-                       "Car.q975", "Canth.mu", "Canth.q25", "Canth.q975", "Cbrown.mu", "Cbrown.q25", 
-                       "Cbrown.q975","Cw.mu", "Cw.q25", "Cw.q975", "Cm.mu", "Cm.q25", "Cm.q975")
+                       "Car.q975", "Cbrown.mu", "Cbrown.q25", "Cbrown.q975","Cw.mu", "Cw.q25", "Cw.q975", 
+                       "Cm.mu", "Cm.q25", "Cm.q975")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -287,22 +322,31 @@ names(mod.params) <- c("N.mu", "N.q25", "N.q975", "Cab.mu", "Cab.q25", "Cab.q975
 ## Plot comparison
 pdf(file=file.path(out.dir,'PROSPECTD_Inversion_Diagnostics.pdf'),height=8,width=9)
 par(mfrow=c(1,1), mar=c(4.3,4.3,1.0,4.3), oma=c(0.1,0.1,0.1,0.1)) # B L T R
-for (i in seq_along(1:dim(sub_refl_data)[1] )) {
-#for (i in seq_along(1:6) ) {
+#for (i in seq_along(1:dim(sub_refl_data)[1] )) {
+for (i in seq_along(1:3) ) {
   plot(waves,output.LRT$obs.Reflectance[i,], type="l", col="black",xlab="Wavelength (nm)",ylab="Reflectance (0-1)",
-       lwd=3,main=paste0(output.LRT$Spec.Info[i,1]," ", output.LRT$Spec.Info[i,3]) )
-  lines(prospect_waves,prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], version=prospect_ver)[,1],col="red",lwd=2)
+       lwd=3,main=paste0(output.LRT$Spec.Info[i,1]," ", output.LRT$Spec.Info[i,3]),
+       ylim=c(min(p.refl.stats$lower[i,]), max(p.refl.stats$upper[i,])+0.1) )
+  lines(prospect_waves, rrtm::prospect5(mod.params[i,"N.mu"],mod.params[i,"Cab.mu"],mod.params[i,"Car.mu"],
+                                        mod.params[i,"Cbrown.mu"],mod.params[i,"Cw.mu"],
+                                        mod.params[i,"Cm.mu"])$reflectance,col="red",lwd=2)
   polygon(c(prospect_waves ,rev(prospect_waves)),c(p.refl.stats$upper[i,], rev(p.refl.stats$lower[i,])),
           col="grey70",border=NA)
   lines(waves,output.LRT$obs.Reflectance[i,],col="black",lwd=2)
-  lines(prospect_waves,prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], version=prospect_ver)[,1],col="red",lwd=2)
+  lines(prospect_waves, rrtm::prospect5(mod.params[i,"N.mu"],mod.params[i,"Cab.mu"],mod.params[i,"Car.mu"],
+                                        mod.params[i,"Cbrown.mu"],mod.params[i,"Cw.mu"],
+                                        mod.params[i,"Cm.mu"])$reflectance,col="red",lwd=2)
   legend("topright",legend=c("Observed","Modeled","Modeled 95% PI"),lty=1,col=c("black","red","grey70"),
          lwd=c(3,3,8),bty = "n")
   box(lwd=2.2)
   plot(waves,output.LRT$obs.Reflectance[i,], type="l", col="black",xlab="Wavelength (nm)",ylab="Reflectance (0-1)",
        lwd=3,ylim=c(0,1),main=paste0(output.LRT$Spec.Info[i,1]," ", output.LRT$Spec.Info[i,3]),cex.lab=1.7)
-  lines(prospect_waves,prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], version=prospect_ver)[,1],col="red",lwd=3)
-  lines(prospect_waves,1-prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], version=prospect_ver)[,2],col="grey70",lwd=3) 
+  lines(prospect_waves, rrtm::prospect5(mod.params[i,"N.mu"],mod.params[i,"Cab.mu"],mod.params[i,"Car.mu"],
+                                        mod.params[i,"Cbrown.mu"],mod.params[i,"Cw.mu"],
+                                        mod.params[i,"Cm.mu"])$reflectance,col="red",lwd=2)
+  lines(prospect_waves,1-rrtm::prospect5(mod.params[i,"N.mu"],mod.params[i,"Cab.mu"],mod.params[i,"Car.mu"],
+                                         mod.params[i,"Cbrown.mu"],mod.params[i,"Cw.mu"],
+                                         mod.params[i,"Cm.mu"])$transmittance,col="grey70",lwd=3) 
   axis(4,labels = rev(seq(0.0, 1.0, 0.2)), at = seq(0.0, 1.0, 0.2))
   mtext("Transmittance (0-1)",side=4,line=3,cex=1.7)
   legend("right",legend=c("Meas. Reflectance","Mod. Reflectance","Mod. Transmittance"),
@@ -314,94 +358,6 @@ dev.off()
 #--------------------------------------------------------------------------------------------------#
 
 
-#--------------------------------------------------------------------------------------------------#
-## Calculate absorption - use measured refl, modeled trans
-Start.wave <- 400; End.wave <- 2500
-waves <- seq(Start.wave,End.wave,1)
-#full_spectrum_absorption <- data.frame(1 - output.LRT$mod.Transmittance - output.LRT$obs.Reflectance)
-full_spectrum_absorption <- data.frame(1 - output.LRT$mod.Transmittance - 
-                                         output.LRT$mod.Reflectance) # based on modeled results only
-names(full_spectrum_absorption) <- paste0("Wave_",seq(Start.wave,End.wave,1))
-plot(waves, full_spectrum_absorption[1,],type="l")
-lines(waves, full_spectrum_absorption[2,])
-lines(waves, full_spectrum_absorption[3,])
-
-sub_spec_abs <- full_spectrum_absorption[,which(names(full_spectrum_absorption) %in% 
-                                                  paste0("Wave_",seq(abs.Start.wave,abs.End.wave,1)))]
-leaf_vis_absorption <- rowMeans(sub_spec_abs,na.rm = T)
-leaf_vis_absorption_final <- data.frame(output.LRT$Spec.Info, leaf_vis_absorption)
-names(leaf_vis_absorption_final) <- c(names_output_sample_info,"Leaf_VIS_Spectral_Absorption")
-
-## Licor Fs absorption
-data(sensor.rsr)
-licor.abs <- array(NA,dim=c(dim(mod.params)[1],3))
-for (i in 1:dim(mod.params)[1] ) {
-#for (i in 1:6 ) {
-  # Using observed refl data instead of modeled
-  #refl <- spectral.response(unlist(sub_refl_data[i,]), 'licor')
-  # Using modeled reflectance spectra
-  refl <- spectral.response(as.vector(prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], 
-                                               version=prospect_ver)[,1]), 'licor')
-  trans <- spectral.response(as.vector(prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], 
-                                                version=prospect_ver)[,2]), 'licor')
-  licor.abs[i,] <- 1-trans-refl
-  rm(refl,trans)
-}
-licor.abs <- data.frame(licor.abs)
-names(licor.abs) <- c("Blue","Red","Far_Red")
-licor.abs <- data.frame(licor.abs$Red,licor.abs$Blue,licor.abs$Far_Red)
-names(licor.abs) <- c("Red","Blue","Far_Red")
-#--------------------------------------------------------------------------------------------------#
 
 
-#--------------------------------------------------------------------------------------------------#
-## Output data
-
-# Modeled Reflectance
-output.refl <- data.frame(output.LRT$Spec.Info, output.LRT$mod.Reflectance)
-names(output.refl) <- c(names_output_sample_info, paste0("Wave_",seq(Start.wave,End.wave,1)))
-write.csv(output.refl,file=file.path(out.dir,'PROSPECTD_Modeled_Reflectance.csv'),
-          row.names=FALSE)
-
-prospect_refl <- output.LRT$mod.Reflectance
-names(prospect_refl) <- paste0("Wave_",prospect_waves)
-keep <- which(names(prospect_refl) %in% paste0("Wave_",subset_waves))
-prospect_refl <- prospect_refl[,keep]
-#plot(subset_waves,prospect_refl[1,], type="l")
-resids <- as.matrix(prospect_refl)-as.matrix(output.LRT$obs.Reflectance)
-output.resids <- data.frame(output.LRT$Spec.Info,resids)
-#plot(subset_waves,resids[1,], type="l")
-names(output.resids) <- c(names_output_sample_info, paste0("Wave_",subset_waves))
-write.csv(output.resids,file=file.path(out.dir,'PROSPECTD_Reflectance_Residuals.csv'),
-          row.names=FALSE)
-
-# Modeled Transmittance
-output.trans <- data.frame(output.LRT$Spec.Info, output.LRT$mod.Transmittance)
-names(output.trans) <- c(names_output_sample_info, paste0("Wave_",seq(Start.wave,End.wave,1)))
-write.csv(output.trans,file=file.path(out.dir,'PROSPECTD_Modeled_Transmittance.csv'),
-          row.names=FALSE)
-
-## Modeled Absorption
-# full spectra
-output.abs <- data.frame(output.LRT$Spec.Info, full_spectrum_absorption)
-names(output.abs) <- c(names_output_sample_info, paste0("Wave_",seq(Start.wave,End.wave,1)))
-write.csv(output.abs,file=file.path(out.dir,'PROSPECTD_Modeled_Full_Spec_Absorption.csv'),
-          row.names=FALSE)
-
-# vis
-write.csv(leaf_vis_absorption_final,file=file.path(out.dir,'PROSPECTD_Estimated_Leaf_VIS_Absorption.csv'),
-          row.names=FALSE)
-# Licor Fs
-output.licor.abs <- data.frame(output.LRT$Spec.Info,licor.abs)
-names(output.licor.abs) <- c(names_output_sample_info,"Red","Blue","Far_Red")
-write.csv(output.licor.abs,file=file.path(out.dir,'PROSPECTD_Modeled_LiCor_Absorption.csv'),
-          row.names=FALSE)
-
-# Modeled params
-output.params <- data.frame(output.LRT$Spec.Info,mod.params)
-names(output.params) <- c(names_output_sample_info, names(mod.params))
-write.csv(output.params,file=file.path(out.dir,'PROSPECTD_Modeled_Parameters.csv'),
-          row.names=FALSE)
-#--------------------------------------------------------------------------------------------------#
-
-### EOF
+#plot(samps)
