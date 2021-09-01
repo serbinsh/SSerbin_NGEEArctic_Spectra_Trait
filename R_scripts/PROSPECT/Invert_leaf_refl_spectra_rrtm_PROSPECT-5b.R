@@ -32,6 +32,9 @@ ok <- require(rrtm) ; if (! ok) {
 
 # also requires distributions3 but loading creates namespace issues
 # also uses coda
+# also currently uses PEcAnRTM - but we dont load it until later.
+# how to remove the PEcAn depends for autoburnin and RTM/spec response?  need
+# to move spec response function to rrtm
 list.of.packages <- c("here", "dplyr", "BayesianTools", "rrtm")
 invisible(lapply(list.of.packages, library, character.only = TRUE))
 
@@ -52,10 +55,13 @@ load(file.path(inputdir,"NGEEArctic_Leaf_and_Canopy_Reflectance.RData"))
 head(NGEEArctic_Reflectance$Leaf_Reflectance)[,1:6]
 unique(NGEEArctic_Reflectance$Leaf_Reflectance$Location)
 unique(NGEEArctic_Reflectance$Leaf_Reflectance$Location)
+unique(NGEEArctic_Reflectance$Leaf_Reflectance$Sample_Date)
 
 # subset options
 site_select <- "Utqiagvik" # Utqiagvik, Seward_Peninsula
-samp_date <- "20130725"
+samp_date <- "20140715" # 20130725 20150712 20140714 20160709 20140715 20160710 20140716 20150717 20160711
+# 20150720 20150722 20150723 20150715 20160712 20160713
+#
 
 dataset <- NGEEArctic_Reflectance$Leaf_Reflectance %>%
   filter(Location == site_select) %>%
@@ -151,10 +157,12 @@ Nd <- distributions3::Normal(1, 5)
 curve(dnorm(x, 1, 5), 1, 5)
 
 # Cab density
-#Cabd <- Normal(40, 15)
+#Cabd <- distributions3::Normal(40, 15)
 Cabd <- distributions3::LogNormal(4.1, 0.35)
+#Cabd <- distributions3::Normal(65, 20)
 #curve(dnorm(x, 40, 15), 0, 120)
-curve(dlnorm(x, 4.1, 0.35), 0, 120)
+curve(dlnorm(x, 4.1, 0.35), 0, 140)
+#curve(dnorm(x, 65, 20), 0, 140)
 
 # Car density
 Card <- distributions3::LogNormal(2.1, 0.7)
