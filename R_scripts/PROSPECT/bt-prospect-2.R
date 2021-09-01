@@ -44,4 +44,7 @@ setup <- createBayesianSetup(
 
 samps <- runMCMC(setup)
 
-plot(samps$Z)
+plot(samps)
+
+
+hist(samps$Z[,7])

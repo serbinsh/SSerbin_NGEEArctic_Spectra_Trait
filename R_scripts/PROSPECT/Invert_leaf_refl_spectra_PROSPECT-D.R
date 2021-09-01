@@ -88,7 +88,7 @@ spectra <- droplevels(dataset[,spec_waves])
 
 #--------------------------------------------------------------------------------------------------#
 ## Output directory
-out.dir <- file.path(here::here(),"R_Output","PROSPECTD",site_select,samp_date,'Range_400_700nm')
+out.dir <- file.path(here::here(),"R_Output","PROSPECTD",site_select,samp_date,'Range_400_700nm-v2')
 if (! file.exists(out.dir)) dir.create(out.dir,recursive=TRUE)
 #--------------------------------------------------------------------------------------------------#
 
@@ -199,7 +199,8 @@ system.time(for (i in seq_along(1:dim(sub_refl_data)[1]) ) {
   RT_pred <- array(data=NA,c(n_target,2101))
   print("*** Calculating error stats ***")
   for (r in seq_len(n_target)) {
-    perturbed.prospect.ref <- rnorm(spec.length,prospect(param.samples[r,1:7], prospect_ver)[,1], param.samples[r,6])
+    #perturbed.prospect.ref <- rnorm(spec.length,prospect(param.samples[r,1:7], prospect_ver)[,1], param.samples[r,6])
+    perturbed.prospect.ref <- rnorm(spec.length,prospect(param.samples[r,1:7], prospect_ver)[,1], param.samples[r,8]) # corrected resid
     RT_pred[r,] <- perturbed.prospect.ref
   }
   
@@ -287,8 +288,8 @@ names(mod.params) <- c("N.mu", "N.q25", "N.q975", "Cab.mu", "Cab.q25", "Cab.q975
 ## Plot comparison
 pdf(file=file.path(out.dir,'PROSPECTD_Inversion_Diagnostics.pdf'),height=8,width=9)
 par(mfrow=c(1,1), mar=c(4.3,4.3,1.0,4.3), oma=c(0.1,0.1,0.1,0.1)) # B L T R
-for (i in seq_along(1:dim(sub_refl_data)[1] )) {
-#for (i in seq_along(1:6) ) {
+#for (i in seq_along(1:dim(sub_refl_data)[1] )) {
+for (i in seq_along(1:1) ) {
   plot(waves,output.LRT$obs.Reflectance[i,], type="l", col="black",xlab="Wavelength (nm)",ylab="Reflectance (0-1)",
        lwd=3,main=paste0(output.LRT$Spec.Info[i,1]," ", output.LRT$Spec.Info[i,3]) )
   lines(prospect_waves,prospect(param = mod.params[i,c(1,4,7,10,13,16,19)], version=prospect_ver)[,1],col="red",lwd=2)
