@@ -1,0 +1,15 @@
+Completed Leaf Models:
+*) LMA - (LMA.v2)
+*) Nmass - (Nmass.v5)
+*) Narea - (Narea)
+*) CN Ratio - (CNratio.v11)
+*) Jmax - (Jmax_Tleaf.v14)
+*) Vcmax - (Vcmax_Tleaf.final2)
+
+Completed Canopy Models - Full Resolution:
+*) LMA - (LMA-v4)
+*) Nmass - (Nmass-v5)
+*) Narea - (Narea-v6)
+*) CN Ratio - (CN_ratio-v6)
+*) Jmax_Tleaf - 
+*) Vcmax - 

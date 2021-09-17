@@ -2,7 +2,7 @@
 #
 #
 #
-#    --- Last updated: 04.06.2021 By Shawn P. Serbin <sserbin@bnl.gov>
+#    --- Last updated: 09.16.2021 By Shawn P. Serbin <sserbin@bnl.gov>
 ####################################################################################################
 
 
@@ -38,7 +38,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Narea")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Narea.v5")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -133,7 +133,11 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
-use_this_seed <- 6415
+#use_this_seed <- 6415 v1*
+#use_this_seed <- 999 v2
+#use_this_seed <- 1010 #v3*
+#use_this_seed <- 5757 #v4
+use_this_seed <- 8884 #v5*
 
 method <- "dplyr" #base/dplyr
 # base R - a bit slow

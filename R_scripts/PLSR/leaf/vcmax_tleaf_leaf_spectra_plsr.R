@@ -2,7 +2,7 @@
 #
 #
 #
-#    --- Last updated: 05.03.2021 By Shawn P. Serbin <sserbin@bnl.gov>
+#    --- Last updated: 09.06.2021 By Shawn P. Serbin <sserbin@bnl.gov>
 ####################################################################################################
 
 
@@ -44,7 +44,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.final")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Vcmax_Tleaf.final2")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -202,8 +202,6 @@ remove_sampleIDs <- c("BNL1999","BNL1991","BNL14210","BNL1996","BNL1927","BNL200
                       "BNL1997", # from val
                       "BNL1950", # from val
                       "BNL1880", # from val
-                      
-                      
                       "BNL2023") # from val)
 
 #"BNL1982",,
@@ -228,7 +226,9 @@ plsr_data <- plsr_data %>%
 #use_this_seed <- 9245
 #use_this_seed <- 924582358
 
-use_this_seed <- 22222
+#use_this_seed <- 22222 #final
+use_this_seed <- 555 
+
 
 method <- "base" #base/dplyr
 # base R - a bit slow

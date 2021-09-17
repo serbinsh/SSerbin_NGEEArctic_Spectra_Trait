@@ -2,7 +2,7 @@
 #
 #
 #
-#    --- Last updated: 05.03.2021 By Shawn P. Serbin <sserbin@bnl.gov>
+#    --- Last updated: 09.17.2021 By Shawn P. Serbin <sserbin@bnl.gov>
 ####################################################################################################
 
 
@@ -44,11 +44,13 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Jmax_Tleaf.v9")
-#use_this_seed <- 40489
-#use_this_seed <- 50489
-use_this_seed <- 90491 # 8
-use_this_seed <- 90489 # 9
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/Jmax_Tleaf.v14")
+#use_this_seed <- 90491 # 8*
+#use_this_seed <- 111 # 10 -
+#use_this_seed <- 2324 # 11 - 
+#use_this_seed <- 777 # 12 -
+#use_this_seed <- 5562 # 13 *
+use_this_seed <- 82567 # 14 *
 #--------------------------------------------------------------------------------------------------#
 
 

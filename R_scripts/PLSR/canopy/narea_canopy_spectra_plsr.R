@@ -38,7 +38,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/canopy/Narea")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/canopy/Narea-v6")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -117,30 +117,16 @@ head(plsr_data)[,1:6]
 ### outlier cleanup
 remove_sampleIDs <- c("BNL13145","BNL13151","BNL2349","BNL13147","BNL13050","BNL13079",
                       "BNL14210","BNL2813","BNL2808","BNL2812","BNL13190","BNL12987",
-                      
                       "BNL13192","BNL15358","BNL13146","BNL13402",
-                      
                       "BNL2350","BNL14210",
                       "BNL1645","BNL12993","BNL12987","BNL13186",
-                       
                       "BNL2808","BNL13199","BNL12996",
-                      
                       "BNL1559",
-                      
                       "BNL13424", "BNL13037",
-                      
                       "BNL12995",
-                      
                       "BNL13193",
-                      
                       "BNL13072",
-                      
-                      "BNL13326")#,
-                      
-                      #"BNL1509"
-                      
-                     # )
-
+                      "BNL13326")
 
 plsr_data <- plsr_data %>%
   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
@@ -154,10 +140,12 @@ plsr_data <- plsr_data %>%
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
 
-#use_this_seed <- 653158
-use_this_seed <- 98764
-#use_this_seed <- 12390
-#use_this_seed <- 4689123
+#use_this_seed <- 98764 # v1*
+#use_this_seed <- 5562 # v2
+#use_this_seed <- 448 # v3*
+#use_this_seed <- 119 # v4*
+#use_this_seed <- 2204 # v5
+use_this_seed <- 1380 # v6
 
 method <- "dplyr" #base/dplyr
 # base R - a bit slow
@@ -288,7 +276,7 @@ cal.plsr.output <- data.frame(cal.plsr.data[, which(names(cal.plsr.data) %notin%
 cal.plsr.output <- cal.plsr.output %>%
   mutate(PLSR_CV_Residuals = PLSR_CV_Predicted-get(inVar))
 head(cal.plsr.output)
-cal.R2 <- round(pls::R2(plsr.out)[[1]][nComps],2)
+cal.R2 <- round(pls::R2(plsr.out, intercept=F)[[1]][nComps],2)
 cal.RMSEP <- round(sqrt(mean(cal.plsr.output$PLSR_CV_Residuals^2)),2)
 
 val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin% "Spectra")],
@@ -298,7 +286,7 @@ val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin%
 val.plsr.output <- val.plsr.output %>%
   mutate(PLSR_Residuals = PLSR_Predicted-get(inVar))
 head(val.plsr.output)
-val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data)[[1]][nComps],2)
+val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data, intercept=F)[[1]][nComps],2)
 val.RMSEP <- round(sqrt(mean(val.plsr.output$PLSR_Residuals^2)),2)
 
 rng_quant <- quantile(cal.plsr.output[,inVar], probs = c(0.001, 0.999))
@@ -423,7 +411,7 @@ rmsep_percrmsep <- spectratrait::percent_rmse(plsr_dataset = val.plsr.output,
                                               range="full")
 RMSEP <- rmsep_percrmsep$rmse
 perc_RMSEP <- rmsep_percrmsep$perc_rmse
-r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data)$val[nComps+1],2)
+r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data, intercept=F)$val[nComps],2)
 expr <- vector("expression", 3)
 expr[[1]] <- bquote(R^2==.(r2))
 expr[[2]] <- bquote(RMSEP==.(round(RMSEP,2)))

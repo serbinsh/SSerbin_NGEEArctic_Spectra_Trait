@@ -2,7 +2,7 @@
 #
 #
 #
-#    --- Last updated: 05.07.2021 By Shawn P. Serbin <sserbin@bnl.gov>
+#    --- Last updated: 09.16.2021 By Shawn P. Serbin <sserbin@bnl.gov>
 ####################################################################################################
 
 
@@ -36,9 +36,6 @@ head(Utqiagvik_2013_2015_leaf_pigment_data)
 
 load(file.path(data_dir,"NGEEArctic_Leaf_and_Canopy_Reflectance.RData"))
 head(NGEEArctic_Reflectance$Leaf_Reflectance)[,1:6]
-
-# What is the target variable?
-#inVar <- "Narea_g_m2"
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -59,8 +56,12 @@ getwd()  # check wd
 ### Create dataset
 Utqiagvik_2013_2015_leaf_pigment_data <- Utqiagvik_2013_2015_leaf_pigment_data %>%
   mutate(Chl_ab_area_L_mgcm2=Chl_ab_area_L*0.0001) %>%
-  select(Location,Sample_ID,Sample_Date,USDA_Species_Code,Chl_ab_area_L,
-         Chl_ab_area_L_mgcm2)
+  mutate(Chl_a_area_L_mgcm2=Chl_a_area_L*0.0001) %>%
+  mutate(Chl_b_area_L_mgcm2=Chl_b_area_L*0.0001) %>%
+  mutate(Carot_tot_area_L_mgcm2=Carot_tot_area_L*0.0001) %>%
+  select(Location,Sample_ID,Sample_Date,USDA_Species_Code,Chl_ab_area_L_mgm2=Chl_ab_area_L,
+         Chl_ab_area_L_mgcm2, Chl_a_area_L_mgm2=Chl_a_area_L,Chl_a_area_L_mgcm2,Chl_b_area_L_mgm2=Chl_b_area_L,
+         Chl_b_area_L_mgcm2,Carot_tot_area_L_mgm2=Carot_tot_area_L,Carot_tot_area_L_mgcm2)
 head(Utqiagvik_2013_2015_leaf_pigment_data)
 
 # merge data
@@ -86,28 +87,61 @@ sample_info <- merged_data[,names(merged_data) %notin% paste0("Wave_",seq(350,25
 head(sample_info)
 
 sample_info2 <- sample_info %>%
-  select(Location, Sample_ID, Sample_Date, USDA_Species_Code, Spec_Instrument=Instrument, Chl_ab_area_L, 
-         Chl_ab_area_L_mgcm2)
+  select(Location, Sample_ID, Sample_Date, USDA_Species_Code, Spec_Instrument=Instrument, Chl_ab_area_L_mgm2, 
+         Chl_ab_area_L_mgcm2,Chl_a_area_L_mgm2,Chl_a_area_L_mgcm2,Chl_b_area_L_mgm2,
+         Chl_b_area_L_mgcm2,Carot_tot_area_L_mgm2,Carot_tot_area_L_mgcm2)
 
 analysis_data <- data.frame(sample_info2,Spectra)
 rm(sample_info,sample_info2,Spectra)
+
+head(analysis_data)[1:15]
 #--------------------------------------------------------------------------------------------------#
 
 
 #--------------------------------------------------------------------------------------------------#
-analysis_data <- analysis_data %>%
+analysis_data2 <- analysis_data %>%
+#  filter(Sample_Date!=20150716) %>%
   mutate(ChlNDI=(Wave_750-Wave_705)/(Wave_750+Wave_705)) %>%
+  mutate(Gitelson=(Wave_800-Wave_700)/(Wave_800+Wave_700)) %>%
   mutate(Ratio=Wave_736/Wave_751) %>%
+  mutate(pred_chla=-1.35*10^-4+(3.48*10^-2*ChlNDI)+(4.16*10^-2*ChlNDI^2)) %>%
+  mutate(pred_chlb=3.13*10^-4+(1.11*10^-2*ChlNDI)+(9.39*10^-3*ChlNDI^2)) %>%
   mutate(pred_tot_chlab=1.81*10^-4+(4.6*10^-2*ChlNDI)+(5.12*10^-2*ChlNDI^2)) %>%
   select(!starts_with("Wave_"))
-head(analysis_data)
+head(analysis_data2)
 
-plot(analysis_data$Chl_ab_area_L_mgcm2*1000, analysis_data$pred_tot_chlab*1000,
+
+plot(analysis_data2$Chl_ab_area_L_mgcm2*1000, analysis_data2$pred_tot_chlab*1000,
      xlim=c(0,75),ylim = c(0,75))
 abline(0,1,lty=2)
 
+plot(analysis_data2$Chl_a_area_L_mgcm2*1000, analysis_data2$pred_chla*1000,
+     xlim=c(0,60),ylim = c(0,60))
+abline(0,1,lty=2)
 
-plot(analysis_data$Ratio,analysis_data$Chl_ab_area_L_mgcm2*1000)
+plot(analysis_data2$Chl_b_area_L_mgcm2*1000, analysis_data2$pred_chlb*1000,
+     xlim=c(0,30),ylim = c(0,30))
+abline(0,1,lty=2)
+
+plot(analysis_data2$ChlNDI,analysis_data2$Chl_ab_area_L_mgcm2*1000, xlim=c(0.20,0.70),
+     ylim=c(20,70))
+
+plot(analysis_data2$ChlNDI,analysis_data2$Chl_a_area_L_mgcm2*1000, xlim=c(0.20,0.70),
+     ylim=c(10,50))
+
+
+
+plot(analysis_data2$Ratio,analysis_data2$Chl_ab_area_L_mgcm2*1000, xlim=c(0.86,0.98),
+     ylim=c(20,70))
+
+plot(analysis_data2$Ratio,analysis_data2$Chl_a_area_L_mgcm2*1000, xlim=c(0.86,0.98),
+     ylim=c(10,50))
+
+
+
+plot(analysis_data2$Chl_ab_area_L_mgcm2*1000, analysis_data2$Gitelson)
+
+
 #--------------------------------------------------------------------------------------------------#
 
 

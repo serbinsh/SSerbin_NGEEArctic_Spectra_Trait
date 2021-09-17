@@ -31,7 +31,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/CNratio.v7")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/leaf/CNratio.v11")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -113,12 +113,11 @@ plsr_data <- plsr_data %>%
 #--------------------------------------------------------------------------------------------------#
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
-#use_this_seed <- 8847
-#use_this_seed <- 9924354
-#use_this_seed <- 224566
-#use_this_seed <- 56626
-
-use_this_seed <- 9940
+#use_this_seed <- 9940 # v7
+#use_this_seed <- 9940 # v8*
+#use_this_seed <- 115 # v9*
+#use_this_seed <- 446 # v10
+use_this_seed <- 55 # v11**
 
 method <- "dplyr" #base/dplyr
 # base R - a bit slow
@@ -248,7 +247,7 @@ cal.plsr.output <- data.frame(cal.plsr.data[, which(names(cal.plsr.data) %notin%
 cal.plsr.output <- cal.plsr.output %>%
   mutate(PLSR_CV_Residuals = PLSR_CV_Predicted-get(inVar))
 head(cal.plsr.output)
-cal.R2 <- round(pls::R2(plsr.out)[[1]][nComps],2)
+cal.R2 <- round(pls::R2(plsr.out, intercept=F)[[1]][nComps],2)
 cal.RMSEP <- round(sqrt(mean(cal.plsr.output$PLSR_CV_Residuals^2)),2)
 
 val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin% "Spectra")],
@@ -258,7 +257,7 @@ val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin%
 val.plsr.output <- val.plsr.output %>%
   mutate(PLSR_Residuals = PLSR_Predicted-get(inVar))
 head(val.plsr.output)
-val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data)[[1]][nComps],2)
+val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data, intercept=F)[[1]][nComps],2)
 val.RMSEP <- round(sqrt(mean(val.plsr.output$PLSR_Residuals^2)),2)
 
 rng_quant <- quantile(cal.plsr.output[,inVar], probs = c(0.001, 0.999))
@@ -383,7 +382,7 @@ rmsep_percrmsep <- spectratrait::percent_rmse(plsr_dataset = val.plsr.output,
                                               range="full")
 RMSEP <- rmsep_percrmsep$rmse
 perc_RMSEP <- rmsep_percrmsep$perc_rmse
-r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data)$val[nComps+1],2)
+r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data, intercept=F)$val[nComps],2)
 expr <- vector("expression", 3)
 expr[[1]] <- bquote(R^2==.(r2))
 expr[[2]] <- bquote(RMSEP==.(round(RMSEP,2)))

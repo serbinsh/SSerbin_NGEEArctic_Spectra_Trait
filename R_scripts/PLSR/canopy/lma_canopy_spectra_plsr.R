@@ -38,7 +38,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/canopy/LMA")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/canopy/LMA-v5")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -126,8 +126,9 @@ head(plsr_data)[,1:6]
 #                       "BNL13072",
 #                       "BNL13326")
 # 
-# plsr_data <- plsr_data %>%
-#   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
+remove_sampleIDs <- c("BNL13072","BNL13077")
+plsr_data <- plsr_data %>%
+   filter(plsr_data$Sample_ID %notin% remove_sampleIDs) 
 
 plsr_data <- plsr_data %>%
    filter(plsr_data[,inVar] < 150)
@@ -138,7 +139,12 @@ plsr_data <- plsr_data %>%
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
 
-use_this_seed <- 45678
+#use_this_seed <- 45678 # v1*
+#use_this_seed <- 116 # v2*
+#use_this_seed <- 116 # v3*
+#use_this_seed <- 3788 # v4*
+use_this_seed <- 3788 # v5*
+
 
 method <- "dplyr" #base/dplyr
 # base R - a bit slow
@@ -269,7 +275,7 @@ cal.plsr.output <- data.frame(cal.plsr.data[, which(names(cal.plsr.data) %notin%
 cal.plsr.output <- cal.plsr.output %>%
   mutate(PLSR_CV_Residuals = PLSR_CV_Predicted-get(inVar))
 head(cal.plsr.output)
-cal.R2 <- round(pls::R2(plsr.out)[[1]][nComps],2)
+cal.R2 <- round(pls::R2(plsr.out, intercept=F)[[1]][nComps],2)
 cal.RMSEP <- round(sqrt(mean(cal.plsr.output$PLSR_CV_Residuals^2)),2)
 
 val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin% "Spectra")],
@@ -279,7 +285,7 @@ val.plsr.output <- data.frame(val.plsr.data[, which(names(val.plsr.data) %notin%
 val.plsr.output <- val.plsr.output %>%
   mutate(PLSR_Residuals = PLSR_Predicted-get(inVar))
 head(val.plsr.output)
-val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data)[[1]][nComps],2)
+val.R2 <- round(pls::R2(plsr.out,newdata=val.plsr.data, intercept=F)[[1]][nComps],2)
 val.RMSEP <- round(sqrt(mean(val.plsr.output$PLSR_Residuals^2)),2)
 
 rng_quant <- quantile(cal.plsr.output[,inVar], probs = c(0.001, 0.999))
@@ -404,7 +410,7 @@ rmsep_percrmsep <- spectratrait::percent_rmse(plsr_dataset = val.plsr.output,
                                               range="full")
 RMSEP <- rmsep_percrmsep$rmse
 perc_RMSEP <- rmsep_percrmsep$perc_rmse
-r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data)$val[nComps+1],2)
+r2 <- round(pls::R2(plsr.out, newdata = val.plsr.data, intercept=F)$val[nComps],2)
 expr <- vector("expression", 3)
 expr[[1]] <- bquote(R^2==.(r2))
 expr[[2]] <- bquote(RMSEP==.(round(RMSEP,2)))
@@ -419,6 +425,9 @@ plotrix::plotCI(val.plsr.output$PLSR_Predicted,val.plsr.output[,inVar],
                 ylab=paste0("Observed ", paste(inVar), " (units)"),
                 cex.axis=1.5,cex.lab=1.8)
 abline(0,1,lty=2,lw=2)
+legend("topleft", legend=expr, bty="n", cex=1.5)
+legend("bottomright", legend=c("Prediction Interval","Confidence Interval"), 
+       lty=c(1,1), col = c("grey80","black"), lwd=3, bty="n", cex=1.5)
 plotrix::plotCI(val.plsr.output$PLSR_Predicted,val.plsr.output[,inVar], 
                 li=val.plsr.output$LCI, ui=val.plsr.output$UCI, gap=0.009,sfrac=0.004, 
                 lwd=1.6, xlim=c(rng_vals[1], rng_vals[2]), ylim=c(rng_vals[1], rng_vals[2]), 
@@ -426,9 +435,6 @@ plotrix::plotCI(val.plsr.output$PLSR_Predicted,val.plsr.output[,inVar],
                 cex=2, xlab=paste0("Predicted ", paste(inVar), " (units)"),
                 ylab=paste0("Observed ", paste(inVar), " (units)"),
                 cex.axis=1.5,cex.lab=1.8, add=T)
-legend("topleft", legend=expr, bty="n", cex=1.5)
-legend("bottomright", legend=c("Prediction Interval","Confidence Interval"), 
-       lty=c(1,1), col = c("grey80","black"), lwd=3, bty="n", cex=1.5)
 box(lwd=2.2)
 dev.copy(png,file.path(outdir,paste0(inVar,"_PLSR_Validation_Scatterplot.png")), 
          height=2800, width=3200,  res=340)

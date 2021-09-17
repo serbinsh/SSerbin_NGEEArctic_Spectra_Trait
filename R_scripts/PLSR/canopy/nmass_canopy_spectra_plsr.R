@@ -38,7 +38,7 @@ opar <- par(no.readonly = T)
 # tempdir - use a OS-specified temporary directory 
 # user defined PATH - e.g. "~/scratch/PLSR"
 #output_dir <- "tempdir"
-output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/canopy/Nmass-v5")
+output_dir <- file.path("~/Data/Dropbox/MANUSCRIPTS/BNL_TEST/SSerbin_NGEEArctic_Spectra_Trait/R_Output/PLSR/canopy/Nmass-v6")
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -53,8 +53,6 @@ head(NGEEArctic_Reflectance$Canopy_Reflectance)[,1:6]
 
 # What is the target variable?
 inVar <- "Nmass_mg_g"
-#inVar <- "Narea_g_m2"
-#inVar <- "sqrt_Narea_g_m2"
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -131,7 +129,8 @@ plsr_data <- plsr_data %>%
 ### Create cal/val datasets
 ## Make a stratified random sampling in the strata USDA_Species_Code and Domain
 
-use_this_seed <- 192358
+#use_this_seed <- 192358 # v5
+use_this_seed <- 8327 # v6
 
 method <- "dplyr" #base/dplyr
 # base R - a bit slow
@@ -411,6 +410,9 @@ plotrix::plotCI(val.plsr.output$PLSR_Predicted,val.plsr.output[,inVar],
                 cex=2, xlab=paste0("Predicted ", paste(inVar), " (units)"),
                 ylab=paste0("Observed ", paste(inVar), " (units)"),
                 cex.axis=1.5,cex.lab=1.8)
+legend("topleft", legend=expr, bty="n", cex=1.5)
+legend("bottomright", legend=c("Prediction Interval","Confidence Interval"), 
+       lty=c(1,1), col = c("grey80","black"), lwd=3, bty="n", cex=1.5)
 abline(0,1,lty=2,lw=2)
 plotrix::plotCI(val.plsr.output$PLSR_Predicted,val.plsr.output[,inVar], 
                 li=val.plsr.output$LCI, ui=val.plsr.output$UCI, gap=0.009,sfrac=0.004, 
@@ -419,9 +421,6 @@ plotrix::plotCI(val.plsr.output$PLSR_Predicted,val.plsr.output[,inVar],
                 cex=2, xlab=paste0("Predicted ", paste(inVar), " (units)"),
                 ylab=paste0("Observed ", paste(inVar), " (units)"),
                 cex.axis=1.5,cex.lab=1.8, add=T)
-legend("topleft", legend=expr, bty="n", cex=1.5)
-legend("bottomright", legend=c("Prediction Interval","Confidence Interval"), 
-       lty=c(1,1), col = c("grey80","black"), lwd=3, bty="n", cex=1.5)
 box(lwd=2.2)
 dev.copy(png,file.path(outdir,paste0(inVar,"_PLSR_Validation_Scatterplot.png")), 
          height=2800, width=3200,  res=340)
